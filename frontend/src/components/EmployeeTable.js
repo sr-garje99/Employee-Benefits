@@ -1,0 +1,181 @@
+import * as React from 'react';
+import { DataGrid } from '@mui/x-data-grid';
+import { Card } from '@mui/material';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import { useState, useEffect, useMemo } from 'react';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import EmployeeActions from '../actions/EmployeeActions';
+
+const EmployeeTable = () => {
+	const [ rowId, setRowId ] = useState(null);
+	const [open, setOpen] = useState(false);
+	const [openForm, setOpenForm] = useState(false);
+	const [selectedRow,setSelectedRow]= useState(null);
+	const [ employee, setEmployee ] = useState([]);
+
+
+  const handleClickOpen = (e,params) => {
+    setOpen(true);
+	setSelectedRow(params);
+	console.log(params.row.employeeId);
+  };
+const handleClickOpenForm = (e,params) => {
+    setOpenForm(true);
+	setSelectedRow(params);
+	console.log(params.row.employeeId);
+  };
+  const handleClose = () => {
+    setOpen(false);
+	setOpenForm(false);
+  };
+  const handleDelete = async (id) =>{
+	const updatedEmp = employee.filter(item => id != item.employeeId);
+	setEmployee(updatedEmp);
+	console.log(updatedEmp);
+	fetchEmployees();
+	await axios.delete(`http://localhost:8080/api/employee/${id}`)
+	handleClose();
+	setEmployee((prev) => prev.filter((item) => id !== item.employeeId));
+	toast.success("deleted sucessfully");
+	//window.location.reload();
+	
+  }
+	const columns = useMemo(
+		() => [
+			{ field: 'employeeId', headerName: 'ID', width: 70 },
+			{ field: 'employeeName', headerName: 'Name', width: 130 },
+			{ field: 'employeeEmail', headerName: 'Email', width: 180 },
+			{
+				field: 'employeeMobNo',
+				headerName: 'Mobile Number',
+				type: 'number',
+				width: 200
+			},
+			{
+				field: 'actions',
+				headerName: 'Actions',
+			
+				renderCell: (params) => {
+					//console.log(params) ;
+					return(
+					<>
+					<IconButton aria-label="delete" size="large"onClick={(e)=>handleClickOpenForm(e,params)}>
+						<EditIcon />
+					</IconButton> 
+
+					<IconButton aria-label="delete" size="large" onClick={(e)=>handleClickOpen(e,params)}>
+
+						< DeleteIcon  />
+					</IconButton>
+					 
+					
+					</>)
+				}
+			}
+		],
+		[ rowId ]
+	);
+
+	const fetchEmployees = async () => {
+		const result = await axios.get('http://localhost:8080/api/employee/');
+
+		setEmployee(result.data);
+	};
+	useEffect(() => {
+		fetchEmployees();
+	}, []);
+	return (
+		<div>
+			<Card
+				sx={{
+					width: '80vw',
+					margin: '1vw',
+					justifyContent: 'right',
+					float: 'right'
+				}}
+			>
+				<div style={{ height: 400, width: '100%' }}>
+					<DataGrid
+						rows={employee}
+						columns={columns}
+						getRowId={(row) => row.employeeId}
+						initialState={{
+							pagination: {
+								paginationModel: { page: 0, pageSize: 5 }
+							}
+						}}
+						pageSizeOptions={[ 5, 10 ]}
+						checkboxSelection={false}
+					/>
+					<Dialog
+						open={open}
+						onClose={handleClose}
+						aria-labelledby="alert-dialog-title"
+						aria-describedby="alert-dialog-description"
+					>
+						<DialogTitle id="alert-dialog-title">
+						{"Are you sure you want to Delete ?"}
+						</DialogTitle>
+						<DialogContent>
+						<DialogContentText id="alert-dialog-description">
+							
+						</DialogContentText>
+						</DialogContent>
+						<DialogActions>
+						<Button onClick={()=>handleDelete(selectedRow.row.employeeId)}>Delete</Button>
+						<Button onClick={handleClose} autoFocus>
+							Cancel
+						</Button>
+						</DialogActions>
+					</Dialog>
+					<Button variant="outlined" onClick={handleClickOpen}>
+        Open form dialog
+      </Button>
+      <Dialog open={openForm} onClose={handleClose}>
+        <DialogTitle>Subscribe</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            To subscribe to this website, please enter your email address here. We
+            will send updates occasionally.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Email Address"
+            type="email"
+            fullWidth
+            variant="standard"
+          />
+		  <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Email Address"
+            type="email"
+            fullWidth
+            variant="standard"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleClose}>Subscribe</Button>
+        </DialogActions>
+      </Dialog>
+				</div>
+			</Card>
+		</div>
+	);
+};
+
+export default EmployeeTable;
